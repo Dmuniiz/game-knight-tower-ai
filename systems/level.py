@@ -1,5 +1,5 @@
 import pygame
-from settings import TAMANHO_BLOCO
+from core.settings import TILE_SIZE
 from entities.enemy import Enemy
 
 # mapa da fase
@@ -33,8 +33,8 @@ def criar_mapa():
         # percorre colunas
         for coluna_numero, bloco in enumerate(linha):
 
-            x = coluna_numero * TAMANHO_BLOCO
-            y = linha_numero * TAMANHO_BLOCO
+            x = coluna_numero * TILE_SIZE
+            y = linha_numero * TILE_SIZE
 
             # se for parede
             if bloco == "1":
@@ -43,8 +43,8 @@ def criar_mapa():
 
                     x,
                     y,
-                    TAMANHO_BLOCO,
-                    TAMANHO_BLOCO
+                    TILE_SIZE,
+                    TILE_SIZE
                 )
 
                 paredes.append(parede)
@@ -70,8 +70,8 @@ def criar_mapa():
                 porta = pygame.Rect (
                     x,
                     y,
-                    TAMANHO_BLOCO,
-                    TAMANHO_BLOCO
+                    TILE_SIZE,
+                    TILE_SIZE
                 )
                 
             #inimigo
@@ -81,8 +81,6 @@ def criar_mapa():
 
                 inimigos.append(inimigo)
                 
-
-    print(porta)
 
 
     return paredes, player_posicao, chaves, porta, inimigos
