@@ -14,6 +14,9 @@ class GameScene:
         self.assets = assets
         self.tile_size = TILE_SIZE
         self.stage = 1
+        self.max_stage = 5
+        self.ai_learning = 0.0
+        self.player_move_memory = [0, 0]
 
         self.dungeon = self.assets.load_image("dungeon", "Dungeon_Tileset.png")
         self.key_sprite = self.assets.load_image("key", "keys.png", scale=(TILE_SIZE, TILE_SIZE))
@@ -49,6 +52,9 @@ class GameScene:
             "ponta_esq": self._get_tile(4, 0),
             "ponta_dir": self._get_tile(2, 0),
         }
+         # backward-compatible aliases to avoid key errors from naming drift
+        self.wall_tiles.setdefault("lado_esq", self.wall_tiles["lat_esq"])
+        self.wall_tiles.setdefault("lado_dir", self.wall_tiles["lat_dir"])
         self.door_closed = self._get_tile(7, 5)
         self.door_open = self._get_tile(7, 6)
         self.decorations = {
@@ -73,11 +79,14 @@ class GameScene:
     def reset_level_state(self):
         self.collected_keys = 0
         self.door_is_open = False
-        self.walls, player_position, self.keys, self.door, self.enemies = criar_mapa()
+        self.walls, player_position, self.keys, self.door, self.enemies = criar_mapa(stage=self.stage, ai_level=self.ai_learning)
         self.player = Player(player_position[0], player_position[1])
         self.total_keys = len(self.keys)
         wall_positions = {(wall.x // self.tile_size, wall.y // self.tile_size) for wall in self.walls}
         self.wall_sprites = [(wall, self._choose_wall_tile(wall_positions, wall.x // self.tile_size, wall.y // self.tile_size)) for wall in self.walls]
+
+    def _tile(self, key: str) -> pygame.Surface:
+        return self.wall_tiles.get(key, self.wall_tiles["interior"])
 
     def _choose_wall_tile(self, wall_positions: set[tuple[int, int]], gx: int, gy: int) -> pygame.Surface:
         c = (gx, gy - 1) in wall_positions
@@ -85,6 +94,7 @@ class GameScene:
         e = (gx - 1, gy) in wall_positions
         d = (gx + 1, gy) in wall_positions
         t = self.wall_tiles
+
         if not c and not b and not e and not d: return t["isolado"]
         if c and not b and not e and not d: return t["ponta_cima"]
         if not c and b and not e and not d: return t["ponta_baixo"]
@@ -108,10 +118,16 @@ class GameScene:
 
     def update(self):
         keys = pygame.key.get_pressed()
+        axis_x = int(keys[pygame.K_d]) - int(keys[pygame.K_a])
+        axis_y = int(keys[pygame.K_s]) - int(keys[pygame.K_w])
+        self.player_move_memory[0] = self.player_move_memory[0] * 0.9 + axis_x
+        self.player_move_memory[1] = self.player_move_memory[1] * 0.9 + axis_y
+
         self.player.mover(keys, self.walls)
 
+        learned_bias = (self.player_move_memory[0], self.player_move_memory[1])
         for enemy in self.enemies:
-            enemy.mover(self.player, self.walls)
+            enemy.mover(self.player, self.walls, learned_bias=learned_bias)
 
         for key in self.keys[:]:
             if self.player.rect.colliderect(key):
@@ -123,11 +139,13 @@ class GameScene:
                     self.sound_door.play()
 
         if self.door_is_open and self.player.rect.colliderect(self.door):
-            self.stage += 1
+            self.ai_learning += 0.35
+            self.stage = 1 if self.stage >= self.max_stage else self.stage + 1
             self.reset_level_state()
 
         for enemy in self.enemies:
             if self.player.rect.colliderect(enemy.rect):
+                self.ai_learning += 0.15
                 self.reset_level_state()
 
     def draw(self, screen: pygame.Surface):
