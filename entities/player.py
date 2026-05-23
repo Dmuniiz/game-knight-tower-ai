@@ -36,10 +36,20 @@ class Player:
         self._anim_index = 0.0
         self._anim_vel   = 0.13
         self._movendo    = False
+        
+        # ── Estado e efeitos ───────────────────────────────────────
+        self.base_speed = 4
+        self.speed_boost_until = 0
+        self.invincible_until = 0
+
+        # ── Items ──────────────────────────────────────────────────
+        self.has_sword = False
+        self.shield_durability = 0  # 0 = sem escudo, 1 = com escudo
 
     # ─────────────────────────────────────────────────────────────
     def mover(self, teclas, paredes):
 
+        self.velocidade = self.base_speed + (1 if pygame.time.get_ticks() < self.speed_boost_until else 0)
         posicao_antiga = self.rect.copy()
         self._movendo  = False
 
@@ -87,6 +97,10 @@ class Player:
             frame = pygame.transform.flip(frame, True, False)
 
         sprite_rect = frame.get_rect(center=self.rect.center)
+
+        if pygame.time.get_ticks() < self.invincible_until:
+            pygame.draw.circle(tela, (255, 255, 255), self.rect.center, self.rect.width // 2 + 4, 2)
+
         tela.blit(frame, sprite_rect)
 
         # DEBUG – descomente para ver hitbox:

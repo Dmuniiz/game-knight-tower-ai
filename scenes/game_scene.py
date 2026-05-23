@@ -5,7 +5,8 @@ import pygame
 from core.assets import AssetManager
 from core.settings import HEIGHT, TILE_SIZE, WIDTH
 from entities.player import Player
-from systems.level import criar_mapa
+from entities.items import Sword, Shield
+from systems.level import criar_mapa, MAPS
 from ui.hud import Hud
 
 
@@ -14,7 +15,7 @@ class GameScene:
         self.assets = assets
         self.tile_size = TILE_SIZE
         self.stage = 1
-        self.max_stage = 5
+        self.max_stage = len(MAPS)
         self.ai_learning = 0.0
         self.player_move_memory = [0, 0]
 
@@ -45,7 +46,7 @@ class GameScene:
             "base": self._get_tile(1, 4),
             "lat_esq": self._get_tile(0, 1),
             "lat_dir": self._get_tile(5, 1),
-            "interior": self._get_tile(4, 9),
+            "interior": self._get_tile(1, 0),
             "isolado": self._get_tile(3, 0),
             "ponta_cima": self._get_tile(0, 3),
             "ponta_baixo": self._get_tile(5, 1),
@@ -79,9 +80,11 @@ class GameScene:
     def reset_level_state(self):
         self.collected_keys = 0
         self.door_is_open = False
-        self.walls, player_position, self.keys, self.door, self.enemies = criar_mapa(stage=self.stage, ai_level=self.ai_learning)
+        self.walls, player_position, self.keys, self.door, self.enemies, self.swords, self.shields = criar_mapa(stage=self.stage, ai_level=self.ai_learning)
         self.player = Player(player_position[0], player_position[1])
         self.total_keys = len(self.keys)
+        if self.total_keys == 0:
+            self.door_is_open = True
         wall_positions = {(wall.x // self.tile_size, wall.y // self.tile_size) for wall in self.walls}
         self.wall_sprites = [(wall, self._choose_wall_tile(wall_positions, wall.x // self.tile_size, wall.y // self.tile_size)) for wall in self.walls]
 
@@ -138,15 +141,47 @@ class GameScene:
                     self.door_is_open = True
                     self.sound_door.play()
 
+        # ── Coletar Espadas ────────────────────────────────────────
+        for sword in self.swords[:]:
+            if self.player.rect.colliderect(sword.rect):
+                self.player.has_sword = True
+                self.swords.remove(sword)
+                self.sound_key.play()
+
+        # ── Coletar Escudos ────────────────────────────────────────
+        for shield in self.shields[:]:
+            if self.player.rect.colliderect(shield.rect):
+                self.player.shield_durability = 1
+                self.shields.remove(shield)
+                self.sound_key.play()
+
         if self.door_is_open and self.player.rect.colliderect(self.door):
             self.ai_learning += 0.35
             self.stage = 1 if self.stage >= self.max_stage else self.stage + 1
             self.reset_level_state()
 
-        for enemy in self.enemies:
+        # ── Inimigos com Espada e Escudo ──────────────────────────
+        now = pygame.time.get_ticks()
+        for enemy in self.enemies[:]:
             if self.player.rect.colliderect(enemy.rect):
-                self.ai_learning += 0.15
-                self.reset_level_state()
+                if now < self.player.invincible_until:
+                    continue
+
+                # Se tem espada, mata o inimigo e perde a espada
+                if self.player.has_sword:
+                    self.enemies.remove(enemy)
+                    self.player.has_sword = False
+                    self.sound_key.play()
+                # Se tem escudo, absorve o hit, perde o escudo e fica rápido + invencivel
+                elif self.player.shield_durability > 0:
+                    self.player.shield_durability = 0
+                    self.player.invincible_until = now + 1000
+                    self.player.speed_boost_until = now + 1000
+                    self.sound_key.play()
+                # Caso contrário, morre
+                else:
+                    self.ai_learning += 0.15
+                    self.reset_level_state()
 
     def draw(self, screen: pygame.Surface):
         screen.blit(self.floor_surface, (0, 0))
@@ -160,6 +195,13 @@ class GameScene:
 
         for key in self.keys:
             screen.blit(self.key_sprite, (key.x - 10, key.y - 10))
+        
+        # ── Desenhar Items ─────────────────────────────────────────
+        for sword in self.swords:
+            sword.draw(screen)
+        
+        for shield in self.shields:
+            shield.draw(screen)
 
         self.player.desenhar(screen)
         for enemy in self.enemies:
