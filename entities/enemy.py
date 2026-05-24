@@ -1,5 +1,5 @@
 import pygame
-
+import random
 from systems.ai import buscar_caminho, pixel_para_grid
 from core.settings import TILE_SIZE
 
@@ -92,7 +92,7 @@ def _load_frames(path, frame_w, n_frames, escala):
 
     return frames
 
-
+    
 class Enemy:
 
     def __init__(self, x, y, speed_bonus: float = 0.0):
@@ -129,6 +129,10 @@ class Enemy:
         # estado atual
         self._movendo = False
         self._virado = False
+
+        #morte
+        self.morrendo = False
+        self.morte_ate = 0
 
     # movimentação com colisão
     def _axis_move(self, dx: float, dy: float, paredes):
@@ -177,6 +181,8 @@ class Enemy:
         mapa,
         learned_bias=(0.0, 0.0)
     ):
+        if self.morrendo:
+            return
 
         # posição do inimigo no grid
         inicio = pixel_para_grid(
@@ -275,8 +281,179 @@ class Enemy:
                 False
             )
 
-        # desenha sprite na tela
+        
+        # se estiver morrendo, fica vermelho
+        if self.morrendo:
+            frame = frame.copy()
+            frame.fill((255, 0, 0, 120), special_flags=pygame.BLEND_RGBA_MULT)
+        # desenha frame na tela
         tela.blit(
             frame,
             frame.get_rect(center=self.rect.center)
         )
+
+# inimigo que anda aleatoriamente
+class WanderEnemy(Enemy):
+
+    def __init__(self, x, y, speed_bonus=0.0):
+
+        # herda Enemy
+        super().__init__(x, y, speed_bonus)
+
+        # velocidade
+        self.velocidade = 1.8
+
+        # direção atual
+        self.direcao = [1, 0]
+
+        # timer de troca
+        self.tempo_troca = 0
+
+    def mover(self, player, paredes, mapa, learned_bias=(0.0, 0.0)):
+
+        if self.morrendo:
+            return
+
+        agora = pygame.time.get_ticks()
+
+        # troca direção a cada 1 segundo
+        if agora > self.tempo_troca:
+
+            self.tempo_troca = agora + 1000
+
+            self.direcao = random.choice([
+
+                [1, 0],
+                [-1, 0],
+                [0, 1],
+                [0, -1]
+
+            ])
+
+        self._movendo = True
+
+        # vira sprite
+        self._virado = self.direcao[0] < 0
+
+        # move
+        self._axis_move(
+            self.direcao[0] * self.velocidade,
+            0,
+            paredes
+        )
+
+        self._axis_move(
+            0,
+            self.direcao[1] * self.velocidade,
+            paredes
+        )
+
+        # animação
+        frames_count = len(self._frames_walk)
+
+        self._anim_index = (
+            self._anim_index + self._anim_vel
+        ) % frames_count
+
+
+# inimigo que só persegue se ver player
+class HunterEnemy(Enemy):
+
+    def __init__(self, x, y, speed_bonus=0.0):
+
+        super().__init__(x, y, speed_bonus)
+
+        # mais rápido
+        self.velocidade = 3.9
+
+        # distância de visão
+        self.visao = 7
+
+        #tempo para esquecer o player 
+        self.tempo_memoria = 2500
+
+        #ultima vez que viu o player 
+        self.ultima_visao = 0
+
+    # verifica se player está perto
+    # verifica se player está perto e sem parede no caminho
+    def pode_ver_player(self, player, mapa):
+
+        enemy_grid = pixel_para_grid(
+            self.rect.centerx,
+            self.rect.centery,
+            TILE_SIZE
+        )
+
+        player_grid = pixel_para_grid(
+            player.rect.centerx,
+            player.rect.centery,
+            TILE_SIZE
+        )
+
+        ex, ey = enemy_grid
+        px, py = player_grid
+
+        distancia = abs(ex - px) + abs(ey - py)
+
+        # longe demais
+        if distancia > self.visao:
+            return False
+
+        # só enxerga em linha reta
+        if ex != px and ey != py:
+            return False
+
+        # mesma coluna
+        if ex == px:
+            inicio = min(ey, py) + 1
+            fim = max(ey, py)
+
+            for y in range(inicio, fim):
+                if mapa[y][ex] == "1":
+                    return False
+
+        # mesma linha
+        if ey == py:
+            inicio = min(ex, px) + 1
+            fim = max(ex, px)
+
+            for x in range(inicio, fim):
+                if mapa[ey][x] == "1":
+                    return False
+
+        return True
+
+    def mover(self, player, paredes, mapa, learned_bias=(0.0, 0.0)):
+
+        if self.morrendo:
+            return
+
+        agora = pygame.time.get_ticks()
+
+        # se estiver vendo o player agora, atualiza memória
+        if self.pode_ver_player(player, mapa):
+            self.ultima_visao = agora
+
+        # continua perseguindo por um tempo depois de perder visão
+        ainda_lembra = agora - self.ultima_visao <= self.tempo_memoria
+
+        if ainda_lembra:
+
+            super().mover(
+                player,
+                paredes,
+                mapa,
+                learned_bias
+            )
+
+        else:
+
+            # para quando esquece o player
+            self._movendo = False
+
+            frames_count = len(self._frames_idle)
+
+            self._anim_index = (
+                self._anim_index + self._anim_vel
+            ) % frames_count

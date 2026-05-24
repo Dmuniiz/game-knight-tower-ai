@@ -139,6 +139,10 @@ class Player:
         # 1 = com escudo
         self.shield_durability = 0
 
+        #cooldown da espada
+        self.sword_ready_until = 0
+
+
     # movimentação do player
     def mover(self, teclas, paredes):
 
@@ -250,6 +254,27 @@ class Player:
                 2
             )
 
+        # aura da espada
+        if self.has_sword:
+
+            pygame.draw.circle(
+                tela,
+                (255, 215, 0),
+                self.rect.center,
+                self.rect.width // 2 + 7,
+                2
+            )
+
+        # aura do escudo
+        if self.shield_durability > 0:
+
+            pygame.draw.circle(
+                tela,
+                (100, 149, 237),
+                self.rect.center,
+                self.rect.width // 2 + 11,
+                2
+            )
         # desenha sprite
         tela.blit(frame, sprite_rect)
 

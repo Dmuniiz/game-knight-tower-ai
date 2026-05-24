@@ -145,7 +145,9 @@ class Hud:
         surface: pygame.Surface,
         collected_keys: int,
         total_keys: int,
-        stage: int
+        stage: int,
+        has_sword=False,
+        has_shield=False
     ) -> None:
 
         # desenha fundo
@@ -237,3 +239,43 @@ class Hud:
                 center_y - keys_value.get_height() // 2 + 4
             )
         )
+
+        # =========================================
+        # STATUS DOS ITEMS
+        # =========================================
+
+        status_y = HUD_Y + 36
+
+        # espada
+        if has_sword:
+
+            texto = self.font_small.render(
+                "ESPADA",
+                True,
+                OURO_BRILHO
+            )
+
+            surface.blit(
+                texto,
+                (
+                    WIDTH // 2 - texto.get_width() // 2,
+                    status_y
+                )
+            )
+
+        # escudo
+        if has_shield:
+
+            texto = self.font_small.render(
+                "ESCUDO",
+                True,
+                PERGAMINHO
+            )
+
+            surface.blit(
+                texto,
+                (
+                    WIDTH // 2 - texto.get_width() // 2,
+                    status_y + 20
+                )
+            )

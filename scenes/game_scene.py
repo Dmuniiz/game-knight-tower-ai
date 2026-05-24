@@ -4,6 +4,7 @@ import pygame
 
 from core.assets import AssetManager
 from core.settings import HEIGHT, TILE_SIZE, WIDTH
+from entities import enemy
 from entities.player import Player
 from entities.items import Sword, Shield
 from systems.level import criar_mapa, MAPS
@@ -56,7 +57,25 @@ class GameScene:
         self.sound_door = self.assets.load_sound(
             "door",
             "mixkit-prison-metal-door-close-201.wav",
-            volume=0.4
+            volume=0.5
+        )
+
+        self.sound_sword = self.assets.load_sound(
+            "sword",
+            "dragon-studio-sword-clashhit-393837.mp3",
+            volume=0.5
+        )
+        
+        self.sound_hit = self.assets.load_sound(
+            "hit",
+            "dragon-studio-sword-slice-2-393845.mp3",
+            volume=0.5
+        )
+
+        self.sound_shield = self.assets.load_sound(
+            "shield",
+            "yodguard-shield_impact-3-382411.mp3",
+            volume=0.5
         )
 
         # HUD do jogo
@@ -452,9 +471,11 @@ class GameScene:
 
                 self.player.has_sword = True
 
+                self.player.sword_ready_until = pygame.time.get_ticks() + 500
+
                 self.swords.remove(sword)
 
-                self.sound_key.play()
+                self.sound_sword.play()
 
         # ── coletar escudo ───────────────────────────────
 
@@ -498,6 +519,10 @@ class GameScene:
 
         for enemy in self.enemies[:]:
 
+            #inimigo morrendo não da dano
+            if enemy.morrendo:
+                continue
+
             if self.player.rect.colliderect(enemy.rect):
 
                 # player invencível
@@ -505,13 +530,19 @@ class GameScene:
                     continue
 
                 # mata inimigo
-                if self.player.has_sword:
+                if (
+                    self.player.has_sword
+                    and now >= self.player.sword_ready_until
+                ):
 
-                    self.enemies.remove(enemy)
+                    # inimigo entra em estado de morte
+                    enemy.morrendo = True
+                    enemy.morte_ate = now + 800
 
+                    # player perde espada
                     self.player.has_sword = False
 
-                    self.sound_key.play()
+                    self.sound_hit.play()
 
                 # escudo absorve dano
                 elif self.player.shield_durability > 0:
@@ -522,7 +553,7 @@ class GameScene:
 
                     self.player.speed_boost_until = now + 1000
 
-                    self.sound_key.play()
+                    self.sound_shield.play()
 
                 # player morre
                 else:
@@ -530,6 +561,13 @@ class GameScene:
                     self.ai_learning += 0.15
 
                     self.reset_level_state()
+
+        # remove inimigos depois da animação de morte
+        for enemy in self.enemies[:]:
+
+            if enemy.morrendo and now >= enemy.morte_ate:
+
+                self.enemies.remove(enemy)            
 
     # desenha tudo na tela
     def draw(self, screen: pygame.Surface):
@@ -596,8 +634,10 @@ class GameScene:
 
         # HUD
         self.hud.draw(
-            screen,
-            self.collected_keys,
-            self.total_keys,
-            self.stage
-        )
+        screen,
+        self.collected_keys,
+        self.total_keys,
+        self.stage,
+        self.player.has_sword,
+        self.player.shield_durability > 0
+    )
