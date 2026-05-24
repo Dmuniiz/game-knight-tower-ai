@@ -4,6 +4,14 @@ from core.settings import TILE_SIZE
 from entities.enemy import Enemy
 from entities.items import Sword, Shield
 
+
+#Cria os mapas utilizando matrizzes
+#Cada caracter representa um tipo de bloco ou entidade:
+# "1" = parede  
+# "P" = posição inicial do player
+# "C" = chave
+# "D" = porta de saída
+# "I" = inimigo
 MAPS = [
     [
         "11111111111111111111",
@@ -11,9 +19,9 @@ MAPS = [
         "11111111111111111111",
         "11111111111111111111",
         "11111111111111111111",
-        "100000000000000000I1",
-        "1P0E000000000000000D0",
-        "10000000000000000001",
+        "10001000000010000001",
+        "1P00000000000000000D0",
+        "10000000010000001001",
         "11111111111111111111",
         "11111111111111111111",
         "11111111111111111111",
@@ -42,10 +50,10 @@ MAPS = [
         "111111111C1111111111",
         "11111111111111111111",
     ],
-    [
+    [   
         "11111111111111111111",
-        "1P0000000000000000I1",
-        "10000000001111111111",
+        "1P000000I11111111111",
+        "10000000111111111111",
         "1C000011111111111111",
         "10011111111111111111",
         "10111111111111111111",
@@ -116,7 +124,7 @@ MAPS = [
     ],
     [
         "11111111111111111111",
-        "1P0000010000000C000E1",
+        "1P0000000000000C000E1",
         "10111010111101010101",
         "10C01010000101010101",
         "10101011110101010101",
@@ -190,6 +198,8 @@ MAPS = [
 
 
 def criar_mapa(stage: int = 1, ai_level: float = 0.0):
+        
+        #seleciona o mapa pelo seu número
         mapa = MAPS[(stage - 1) % len(MAPS)]
 
         paredes = []
@@ -200,25 +210,34 @@ def criar_mapa(stage: int = 1, ai_level: float = 0.0):
         player_posicao = None
         porta = None
 
-        speed_bonus = min(2.0, ai_level * 0.25 + (stage - 1) * 0.2)
+        #aumenta a velocidade dos inimigos
+        speed_bonus = min(1.0, ai_level * 0.10 + (stage - 1) * 0.08)   
 
         for linha_numero, linha in enumerate(mapa):
             for coluna_numero, bloco in enumerate(linha):
                 x = coluna_numero * TILE_SIZE
                 y = linha_numero * TILE_SIZE
+                
+                #define o tipo de bloco ou entidade com base no caracter do mapa
 
                 if bloco == "1":
                     paredes.append(pygame.Rect(x, y, TILE_SIZE, TILE_SIZE))
+
                 elif bloco == "P":
                     player_posicao = (x, y)
+
                 elif bloco == "C":
                     chaves.append(pygame.Rect(x + 10, y + 10, 30, 30))
+
                 elif bloco == "D":
                     porta = pygame.Rect(x, y, TILE_SIZE, TILE_SIZE)
+
                 elif bloco == "I":
                     inimigos.append(Enemy(x, y, speed_bonus=speed_bonus))
+
                 elif bloco == "S":
                     espadas.append(Sword(x, y))
+
                 elif bloco == "E":
                     escudos.append(Shield(x, y))
 
