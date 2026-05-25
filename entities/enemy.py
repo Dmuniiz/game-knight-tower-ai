@@ -364,7 +364,7 @@ class HunterEnemy(Enemy):
         super().__init__(x, y, speed_bonus)
 
         # mais rápido
-        self.velocidade = 3.9
+        self.velocidade = 4
 
         # distância de visão
         self.visao = 7

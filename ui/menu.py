@@ -61,7 +61,7 @@ class Menu:
             base_dir,
             "assets",
             "sounds",
-            "mainscreen.mp3"
+            "mainscreen.mp3",
         )
 
         # =====================================================
@@ -105,7 +105,7 @@ class Menu:
 
             pygame.mixer.music.load(self.music_path)
 
-            pygame.mixer.music.set_volume(0.6)
+            pygame.mixer.music.set_volume(0.2)
 
             # -1 = loop infinito
             pygame.mixer.music.play(-1)
