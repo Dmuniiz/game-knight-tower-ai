@@ -270,7 +270,7 @@ class Player:
 
             pygame.draw.circle(
                 tela,
-                (100, 149, 237),
+                (150, 149, 237),
                 self.rect.center,
                 self.rect.width // 2 + 11,
                 2

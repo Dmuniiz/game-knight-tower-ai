@@ -16,31 +16,28 @@ class Sword:
         # define se a espada ainda existe
         self.active = True
 
+        #carrega sprite da espada
+        self.sprite = pygame.image.load(
+            "assets\sprites\Itens\Espada.png"
+        ).convert_alpha()
+
+        #tamanho do sprite
+        self.sprite = pygame.transform.scale(
+            self.sprite,
+            (60, 60)
+        )
+
     # desenha espada na tela
     def draw(self, surface: pygame.Surface):
 
         # só desenha se estiver ativa
         if self.active:
 
-            pygame.draw.polygon(
-                surface,
-                (255, 215, 0),
-                [
-
-                    # topo
-                    (self.rect.centerx, self.rect.top),
-
-                    # direita
-                    (self.rect.right, self.rect.centery),
-
-                    # baixo
-                    (self.rect.centerx, self.rect.bottom),
-
-                    # esquerda
-                    (self.rect.left, self.rect.centery)
-
-                ]
+            surface.blit(
+                self.sprite,
+                self.sprite.get_rect(center=self.rect.center)
             )
+
 
 
 class Shield:
@@ -58,26 +55,26 @@ class Shield:
         # define se o escudo ainda existe
         self.active = True
 
+        #carrega sprite do escudo
+        self.sprite = pygame.image.load(
+            "assets/sprites/itens/Escudo.png"
+        ).convert_alpha()
+
+        #converte pixel preto em transparente
+        self.sprite.set_colorkey((0, 0, 0))
+
+        #tamanho do sprite
+        self.sprite = pygame.transform.scale(
+            self.sprite,
+            (50, 50)
+        )
+
     # desenha escudo na tela
     def draw(self, surface: pygame.Surface):
 
-        # só desenha se estiver ativo
         if self.active:
 
-            pygame.draw.circle(
-
-                # superfície
-                surface,
-
-                # cor
-                (100, 149, 237),
-
-                # centro do círculo
-                self.rect.center,
-
-                # raio
-                15,
-
-                # espessura da borda
-                2
+            surface.blit(
+                self.sprite,
+                self.sprite.get_rect(center=self.rect.center)
             )

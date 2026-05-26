@@ -1,9 +1,7 @@
 from collections import deque
 
-# =========================================================
+
 # Converte posição em pixels para posição do grid
-# Exemplo:
-# pixel 150x200 -> grid 3x4 se o tile for 50
 # =========================================================
 def pixel_para_grid(x, y, tile_size):
 
