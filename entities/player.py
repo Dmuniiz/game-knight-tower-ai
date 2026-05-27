@@ -158,7 +158,7 @@ class Player:
         self._movendo = False
 
         # movimento para cima
-        if teclas[pygame.K_w]:
+        if teclas[pygame.K_w] or teclas[pygame.K_UP]:
 
             self.rect.y -= self.velocidade
 
@@ -166,7 +166,7 @@ class Player:
             self._movendo = True
 
         # movimento para baixo
-        if teclas[pygame.K_s]:
+        if teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
 
             self.rect.y += self.velocidade
 
@@ -174,7 +174,7 @@ class Player:
             self._movendo = True
 
         # movimento esquerda
-        if teclas[pygame.K_a]:
+        if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
 
             self.rect.x -= self.velocidade
 
@@ -183,7 +183,7 @@ class Player:
             self._movendo = True
 
         # movimento direita
-        if teclas[pygame.K_d]:
+        if teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
 
             self.rect.x += self.velocidade
 
